@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────
+// UTILISATEURS (Propriétaire & Gestionnaire)
+// ─────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(OWNER)
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  logo          String?   // URL du logo uploadé
+
+  // Relations
+  properties Property[]  // biens qu'il gère directement
+  tenants    Tenant[]    // locataires qu'il a créés
+  contracts  Contract[]
+  owners     Owner[]     // propriétaires qu'il gère (si Gestionnaire)
+  notificationTemplates NotificationTemplate[] 
+
+  @@map("users")
+}
+
+enum Role {
+  OWNER      // propriétaire individuel
+  MANAGER    // gestionnaire / agence
+}
+
+enum Plan {
+  FREE
+  PRO
+  AGENCY
+}
+
+// ─────────────────────────────────────────
+// PROPRIÉTAIRE (géré par un Gestionnaire)
+// ─────────────────────────────────────────
+
+model Owner {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  phone       String
+  email       String?
+  token       String   @unique @default(cuid()) // lien de suivi lecture seule
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Le gestionnaire qui gère ce propriétaire
+  managerId   String
+  manager     User     @relation(fields: [managerId], references: [id])
+
+  // Biens appartenant à ce propriétaire
+  properties  Property[]
+
+  @@map("owners")
+}
+
+// ─────────────────────────────────────────
+// BIENS IMMOBILIERS
+// ─────────────────────────────────────────
+
+model Property {
+  id          String       @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  type        PropertyType
+  rentAmount  Float
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Géré directement par un propriétaire
+  userId      String?
+  user        User?        @relation(fields: [userId], references: [id])
+
+  // Ou appartient à un propriétaire géré par une agence
+  ownerId     String?
+  owner       Owner?       @relation(fields: [ownerId], references: [id])
+
+  contracts   Contract[]
+
+  @@map("properties")
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  STUDIO
+  COMMERCIAL
+}
+
+// ─────────────────────────────────────────
+// LOCATAIRES
+// ─────────────────────────────────────────
+
+model Tenant {
+  id             String    @id @default(cuid())
+  firstName      String
+  lastName       String
+  phone          String
+  email          String?
+  dateOfBirth    DateTime?
+  placeOfBirth   String?
+  nationality    String?
+  idType         IdType?
+  idNumber       String?
+  token          String    @unique @default(cuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+
+  contracts      Contract[]
+  payments       Payment[]
+
+  @@map("tenants")
+}
+
+enum IdType {
+  CNI
+  PASSPORT
+  RESIDENCE_PERMIT
+  VOTER_CARD
+}
+
+// ─────────────────────────────────────────
+// CONTRATS DE BAIL
+// ─────────────────────────────────────────
+
+model Contract {
+  id          String         @id @default(cuid())
+  startDate   DateTime
+  endDate     DateTime?
+  rentAmount  Int
+  deposit     Int?
+  status      ContractStatus @default(ACTIVE)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id])
+
+  payments    Payment[]
+
+  @@map("contracts")
+}
+
+
+enum ContractStatus {
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+// ─────────────────────────────────────────
+// PAIEMENTS
+// ─────────────────────────────────────────
+
+model Payment {
+  id             String        @id @default(cuid())
+  amount         Int
+  expectedAmount Int
+  status         PaymentStatus @default(PENDING)
+  method         PaymentMethod
+  dueDate        DateTime
+  paidAt         DateTime?
+  commission     Int?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  tenantId       String
+  tenant         Tenant   @relation(fields: [tenantId], references: [id])
+
+  contractId     String
+  contract       Contract @relation(fields: [contractId], references: [id])
+
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  MOBILE_MONEY
+  CASH
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL   // paiement partiel
+  PAID
+  LATE
+}
+
+
+model NotificationTemplate {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // REMINDER_BEFORE, REMINDER_LATE, PAYMENT_CONFIRMATION
+  channel   String   // EMAIL, SMS, WHATSAPP
+  subject   String?  // Pour les emails uniquement
+  body      String   // Corps du message avec variables {nom}, {montant}, etc.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, type, channel])
+  @@map("notification_templates")
+}
