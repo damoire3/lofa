@@ -56,50 +56,57 @@ export default async function ContractsPage() {
         </div>
       ) : (
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Locataire</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Bien</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Loyer</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Début</th>
-                <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {contracts.map((contract: ContractWithRelations) => (
-                <tr key={contract.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-5 py-4">
-                    <p className="text-sm font-medium text-gray-900">
-                      {contract.tenant.firstName} {contract.tenant.lastName}
-                    </p>
-                  </td>
-                  <td className="px-5 py-4">
-                    <p className="text-sm text-gray-600">{contract.property.name}</p>
-                  </td>
-                  <td className="px-5 py-4">
-                    <p className="text-sm font-medium text-gray-900">
-                      {formatCurrency(contract.rentAmount)}
-                    </p>
-                  </td>
-                  <td className="px-5 py-4">
-                    <p className="text-sm text-gray-600">{formatDate(contract.startDate)}</p>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span className={`text-xs font-medium px-2 py-1 rounded-lg ${
-                      contract.status === 'ACTIVE'
-                        ? 'bg-green-50 text-green-600'
-                        : contract.status === 'EXPIRED'
-                        ? 'bg-gray-100 text-gray-500'
-                        : 'bg-red-50 text-red-500'
-                    }`}>
-                      {CONTRACT_STATUS_LABELS[contract.status as keyof typeof CONTRACT_STATUS_LABELS]}
-                    </span>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
+              <thead>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Locataire</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Bien</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Loyer</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Début</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {contracts.map((contract: ContractWithRelations) => (
+                  <tr key={contract.id} className="hover:bg-gray-50 transition-colors relative">
+                    <td className="px-5 py-4">
+                      <Link href={`/dashboard/contracts/${contract.id}`} className="absolute inset-0 z-0" />
+                      <p className="text-sm font-medium text-gray-900 truncate max-w-[120px] relative z-10 pointer-events-none">
+                        {contract.tenant.firstName} {contract.tenant.lastName}
+                      </p>
+                    </td>
+                    <td className="px-5 py-4 hidden md:table-cell">
+                      <p className="text-sm text-gray-600 truncate max-w-[140px] pointer-events-none">
+                        {contract.property.name}
+                      </p>
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="text-sm font-medium text-gray-900 pointer-events-none">
+                        {formatCurrency(contract.rentAmount)}
+                      </p>
+                    </td>
+                    <td className="px-5 py-4 hidden md:table-cell">
+                      <p className="text-sm text-gray-600 pointer-events-none">
+                        {formatDate(contract.startDate)}
+                      </p>
+                    </td>
+                    <td className="px-5 py-4">
+                      <span className={`text-xs font-medium px-2 py-1 rounded-lg whitespace-nowrap pointer-events-none ${
+                        contract.status === 'ACTIVE'
+                          ? 'bg-green-50 text-green-600'
+                          : contract.status === 'EXPIRED'
+                          ? 'bg-gray-100 text-gray-500'
+                          : 'bg-red-50 text-red-500'
+                      }`}>
+                        {CONTRACT_STATUS_LABELS[contract.status as keyof typeof CONTRACT_STATUS_LABELS]}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

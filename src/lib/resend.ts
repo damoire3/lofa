@@ -12,6 +12,8 @@ export async function sendReminderEmail({
   dueDate,
   portalUrl,
   daysUntilDue,
+  customSubject,
+  customBody,
 }: {
   to: string
   tenantName: string
@@ -19,15 +21,19 @@ export async function sendReminderEmail({
   dueDate: string
   portalUrl: string
   daysUntilDue: number
+  customSubject?: string
+  customBody?: string
 }) {
   const isLate = daysUntilDue < 0
   const isToday = daysUntilDue === 0
 
-  const subject = isLate
-    ? `⚠️ Loyer en retard — ${Math.abs(daysUntilDue)} jour(s) de retard`
-    : isToday
-    ? `📅 Votre loyer est dû aujourd'hui`
-    : `🔔 Rappel — Votre loyer est dû dans ${daysUntilDue} jour(s)`
+  const subject = customSubject || (
+    isLate
+      ? `⚠️ Loyer en retard — ${Math.abs(daysUntilDue)} jour(s) de retard`
+      : isToday
+      ? `📅 Votre loyer est dû aujourd'hui`
+      : `🔔 Rappel — Votre loyer est dû dans ${daysUntilDue} jour(s)`
+  )
 
   const urgencyColor = isLate ? '#ef4444' : isToday ? '#f59e0b' : '#16a34a'
   const urgencyText = isLate
@@ -39,6 +45,11 @@ export async function sendReminderEmail({
   const amountFormatted = new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: 0,
   }).format(amount) + ' FCFA'
+
+  // Si un corps personnalisé est fourni, on l'affiche en plus du bloc visuel standard
+  const customBodyHtml = customBody
+    ? `<p style="color: #374151; font-size: 14px; white-space: pre-line; margin: 16px 0;">${customBody}</p>`
+    : ''
 
   const html = `
     <!DOCTYPE html>
@@ -59,6 +70,8 @@ export async function sendReminderEmail({
           <p style="color: #374151; font-size: 15px; margin-bottom: 8px;">
             Bonjour <strong>${tenantName}</strong>,
           </p>
+
+          ${customBodyHtml}
 
           <div style="background: ${urgencyColor}15; border: 1px solid ${urgencyColor}30; border-radius: 12px; padding: 16px; margin: 20px 0;">
             <p style="color: ${urgencyColor}; font-weight: 600; margin: 0 0 4px;">

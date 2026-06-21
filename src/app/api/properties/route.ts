@@ -10,14 +10,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
     }
 
-    const properties = await prisma.property.findMany({
-      where: { userId: session.user.id },
-      include: {
-        tenants: true,
-        contracts: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+const properties = await prisma.property.findMany({
+  where: { userId: session.user.id },
+  include: {
+    contracts: {
+      include: { tenant: true },
+    },
+  },
+  orderBy: { createdAt: 'desc' },
+})
 
     return NextResponse.json(properties)
   } catch (error) {

@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { ownerSchema } from '@/lib/validations'
-import { generateToken } from '@/lib/tokens'
+import { z } from 'zod'
+
+const updateSchema = z.object({
+  amount: z.number().positive().optional(),
+  status: z.enum(['PENDING', 'PARTIAL', 'PAID', 'LATE']).optional(),
+  method: z.enum(['CASH', 'MOBILE_MONEY', 'BANK_TRANSFER']).optional(),
+})
 
 export async function GET(
   req: Request,
@@ -16,18 +21,21 @@ export async function GET(
 
     const { id } = await params
 
-    const owner = await prisma.owner.findFirst({
-      where: { id, managerId: session.user.id },
-      include: { properties: { include: { tenants: true } } },
+    const payment = await prisma.payment.findFirst({
+      where: { id, tenant: { userId: session.user.id } },
+      include: {
+        tenant: true,
+        contract: { include: { property: true } },
+      },
     })
 
-    if (!owner) {
-      return NextResponse.json({ error: 'Propriétaire introuvable' }, { status: 404 })
+    if (!payment) {
+      return NextResponse.json({ error: 'Paiement introuvable' }, { status: 404 })
     }
 
-    return NextResponse.json(owner)
+    return NextResponse.json(payment)
   } catch (error) {
-    console.error('[OWNER_GET]', error)
+    console.error('[PAYMENT_GET]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -44,43 +52,31 @@ export async function PATCH(
 
     const { id } = await params
     const body = await req.json()
+    const parsed = updateSchema.safeParse(body)
 
-    const owner = await prisma.owner.findFirst({
-      where: { id, managerId: session.user.id },
-    })
-
-    if (!owner) {
-      return NextResponse.json({ error: 'Propriétaire introuvable' }, { status: 404 })
-    }
-
-    // Si on demande une régénération du token
-    if (body.regenerateToken) {
-      const newToken = generateToken()
-      const updated = await prisma.owner.update({
-        where: { id },
-        data: { token: newToken },
-      })
-      return NextResponse.json(updated)
-    }
-
-    const parsed = ownerSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json({ error: 'Données invalides' }, { status: 400 })
     }
 
-    const updated = await prisma.owner.update({
+    const existing = await prisma.payment.findFirst({
+      where: { id, tenant: { userId: session.user.id } },
+    })
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Paiement introuvable' }, { status: 404 })
+    }
+
+    const payment = await prisma.payment.update({
       where: { id },
       data: {
-        firstName: parsed.data.firstName,
-        lastName: parsed.data.lastName,
-        phone: parsed.data.phone,
-        email: parsed.data.email || null,
+        ...parsed.data,
+        ...(parsed.data.status === 'PAID' && { paidAt: new Date() }),
       },
     })
 
-    return NextResponse.json(updated)
+    return NextResponse.json(payment)
   } catch (error) {
-    console.error('[OWNER_PATCH]', error)
+    console.error('[PAYMENT_PATCH]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
@@ -97,19 +93,19 @@ export async function DELETE(
 
     const { id } = await params
 
-    const owner = await prisma.owner.findFirst({
-      where: { id, managerId: session.user.id },
+    const existing = await prisma.payment.findFirst({
+      where: { id, tenant: { userId: session.user.id } },
     })
 
-    if (!owner) {
-      return NextResponse.json({ error: 'Propriétaire introuvable' }, { status: 404 })
+    if (!existing) {
+      return NextResponse.json({ error: 'Paiement introuvable' }, { status: 404 })
     }
 
-    await prisma.owner.delete({ where: { id } })
+    await prisma.payment.delete({ where: { id } })
 
-    return NextResponse.json({ message: 'Propriétaire supprimé' })
+    return NextResponse.json({ message: 'Paiement supprimé' })
   } catch (error) {
-    console.error('[OWNER_DELETE]', error)
+    console.error('[PAYMENT_DELETE]', error)
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }

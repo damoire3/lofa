@@ -90,40 +90,44 @@ export default async function PaymentsPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {(payments as (Payment & { tenant: Tenant; contract: Contract & { property: Property } })[]).map((payment) => (
-                  <tr key={payment.id} className="hover:bg-gray-50 transition-colors">
+                  <tr
+                    key={payment.id}
+                    className="hover:bg-gray-50 transition-colors relative"
+                  >
                     <td className="px-5 py-4">
-                      <p className="text-sm font-medium text-gray-900 truncate max-w-[120px]">
+                      <Link href={`/dashboard/payments/${payment.id}`} className="absolute inset-0 z-0" />
+                      <p className="text-sm font-medium text-gray-900 truncate max-w-[120px] relative z-10 pointer-events-none">
                         {payment.tenant.firstName} {payment.tenant.lastName}
                       </p>
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
-                      <p className="text-sm text-gray-600 truncate max-w-[140px]">
+                      <p className="text-sm text-gray-600 truncate max-w-[140px] pointer-events-none">
                         {payment.contract.property.name}
                       </p>
                     </td>
                     <td className="px-5 py-4">
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-gray-900 pointer-events-none">
                         {formatCurrency(payment.amount)}
                       </p>
                       {payment.expectedAmount > payment.amount && (
-                        <p className="text-xs text-amber-500">
+                        <p className="text-xs text-amber-500 pointer-events-none">
                           / {formatCurrency(payment.expectedAmount)}
                         </p>
                       )}
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 pointer-events-none">
                         {payment.method === 'MOBILE_MONEY' ? 'Mobile Money' :
                          payment.method === 'CASH' ? 'Espèces' : 'Virement'}
                       </p>
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 pointer-events-none">
                         {formatDate(payment.createdAt)}
                       </p>
                     </td>
                     <td className="px-5 py-4">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-lg whitespace-nowrap ${
+                      <span className={`text-xs font-medium px-2 py-1 rounded-lg whitespace-nowrap pointer-events-none ${
                         payment.status === 'PAID'
                           ? 'bg-green-50 text-green-600'
                           : payment.status === 'LATE'

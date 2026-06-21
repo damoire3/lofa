@@ -17,18 +17,17 @@ export async function POST(req: Request) {
     today.setHours(0, 0, 0, 0)
 
     // Récupère tous les paiements actifs
-    const payments = await prisma.payment.findMany({
-      where: {
-        status: { in: ['PENDING', 'PARTIAL', 'LATE'] },
-      },
-      include: {
-        tenant: {
-          include: {
-            property: true,
-          },
-        },
-      },
-    })
+const payments = await prisma.payment.findMany({
+  where: {
+    status: { in: ['PENDING', 'PARTIAL', 'LATE'] },
+  },
+  include: {
+    tenant: true,
+    contract: {
+      include: { property: true },
+    },
+  },
+})
 
     let remindersSent = 0
 

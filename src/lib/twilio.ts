@@ -58,6 +58,7 @@ export async function sendReminderNotification({
   dueDate,
   portalUrl,
   daysUntilDue,
+  customMessage,
 }: {
   phone: string
   tenantName: string
@@ -65,6 +66,7 @@ export async function sendReminderNotification({
   dueDate: string
   portalUrl: string
   daysUntilDue: number
+  customMessage?: string
 }) {
   const amountFormatted = new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: 0,
@@ -79,7 +81,7 @@ export async function sendReminderNotification({
     ? `📅 Loyer dû AUJOURD'HUI`
     : `🔔 Rappel : loyer dans ${daysUntilDue} jour(s)`
 
-  const message = `${urgenceText}
+  const defaultMessage = `${urgenceText}
 
 Bonjour ${tenantName},
 
@@ -93,6 +95,8 @@ Consultez votre portail locataire :
 ${portalUrl}
 
 — Lofa`
+
+  const message = customMessage || defaultMessage
 
   // Envoie SMS et WhatsApp en parallèle
   const promises = []
@@ -115,18 +119,20 @@ export async function sendPaymentConfirmationSMS({
   amount,
   propertyName,
   portalUrl,
+  customMessage,
 }: {
   phone: string
   tenantName: string
   amount: number
   propertyName: string
   portalUrl: string
+  customMessage?: string
 }) {
   const amountFormatted = new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: 0,
   }).format(amount) + ' FCFA'
 
-  const message = `✅ Paiement confirmé !
+  const defaultMessage = `✅ Paiement confirmé !
 
 Bonjour ${tenantName},
 
@@ -136,6 +142,8 @@ Téléchargez votre quittance :
 ${portalUrl}
 
 — Lofa`
+
+  const message = customMessage || defaultMessage
 
   const promises = []
 

@@ -15,10 +15,14 @@ export async function GET(
 
     const { id } = await params
 
-    const property = await prisma.property.findFirst({
-      where: { id, userId: session.user.id },
-      include: { tenants: true, contracts: true },
-    })
+const property = await prisma.property.findFirst({
+  where: { id, userId: session.user.id },
+  include: {
+    contracts: {
+      include: { tenant: true },
+    },
+  },
+})
 
     if (!property) {
       return NextResponse.json({ error: 'Bien introuvable' }, { status: 404 })

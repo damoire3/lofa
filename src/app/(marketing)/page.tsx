@@ -5,6 +5,7 @@ import WhyLofa from '@/components/marketing/WhyLofa'
 import Pricing from '@/components/marketing/Pricing'
 import Testimonials from '@/components/marketing/Testimonials'
 import CTA from '@/components/marketing/CTA'
+import Contact from '@/components/marketing/Contact'
 
 export default function LandingPage() {
   return (
@@ -16,6 +17,7 @@ export default function LandingPage() {
       <Pricing />
       <Testimonials />
       <CTA />
+      <Contact />
     </>
   )
 }

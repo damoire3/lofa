@@ -15,14 +15,15 @@ export async function GET(
 
     const { id } = await params
 
-    const tenant = await prisma.tenant.findFirst({
-      where: { id, userId: session.user.id },
-      include: {
-        property: true,
-        contracts: true,
-        payments: true,
-      },
-    })
+const tenant = await prisma.tenant.findFirst({
+  where: { id, userId: session.user.id },
+  include: {
+    contracts: {
+      include: { property: true },
+    },
+    payments: true,
+  },
+})
 
     if (!tenant) {
       return NextResponse.json({ error: 'Locataire introuvable' }, { status: 404 })
@@ -61,16 +62,15 @@ export async function PATCH(
       return NextResponse.json({ error: 'Locataire introuvable' }, { status: 404 })
     }
 
-    const updated = await prisma.tenant.update({
-      where: { id },
-      data: {
-        firstName: parsed.data.firstName,
-        lastName: parsed.data.lastName,
-        phone: parsed.data.phone,
-        email: parsed.data.email || null,
-        propertyId: parsed.data.propertyId,
-      },
-    })
+const updated = await prisma.tenant.update({
+  where: { id },
+  data: {
+    firstName: parsed.data.firstName,
+    lastName: parsed.data.lastName,
+    phone: parsed.data.phone,
+    email: parsed.data.email || null,
+  },
+})
 
     return NextResponse.json(updated)
   } catch (error) {
